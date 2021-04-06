@@ -34,7 +34,7 @@ func main() {
 	}
 
 	if os.Getenv("USE_POLLING") != "yes" {
-		http.HandleFunc("/"+os.Getenv("TELEGRAM_WEBHOOK"), func(writer http.ResponseWriter, request *http.Request) {
+		http.HandleFunc("/"+os.Getenv("TELEGRAM_WEBHOOK_KEY"), func(writer http.ResponseWriter, request *http.Request) {
 			upd := telebot.Update{}
 			data, err := io.ReadAll(request.Body)
 			if err != nil {
@@ -49,6 +49,14 @@ func main() {
 			writer.WriteHeader(http.StatusOK)
 		})
 		go http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+		err = b.SetWebhook(&telebot.Webhook{
+			Endpoint: &telebot.WebhookEndpoint{
+				PublicURL: os.Getenv("TELEGRAM_WEBHOOK_HOST")+"/"+os.Getenv("TELEGRAM_WEBHOOK_KEY"),
+			},
+		})
+		if err != nil {
+			log.Fatalln("cannot set webhook:", err)
+		}
 	}
 
 	grid, err := f.GetGrid()

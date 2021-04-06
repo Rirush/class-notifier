@@ -3,3 +3,18 @@ on:
     branches:
       - master
 jobs:
+  deploy:
+    name: Deploy code from master to Dokku
+    runs-on: ubuntu-20.04
+    steps:
+      - id: checkout
+        name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: deploy
+        name: Push master to Dokku
+        uses: dokku/github-action@v1.0.1
+        with:
+          git_remote_url: ${{ secrets.REMOTE_URL }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
