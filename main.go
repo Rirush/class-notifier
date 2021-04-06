@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/Rirush/forlabs"
 	"gopkg.in/tucnak/telebot.v2"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +18,13 @@ func main() {
 
 	if os.Getenv("USE_POLLING") == "yes" {
 		settings.Poller = &telebot.LongPoller{Timeout: 10 * time.Second}
+	} else {
+		settings.Poller = &telebot.Webhook{
+			Endpoint: &telebot.WebhookEndpoint{
+				PublicURL: os.Getenv("TELEGRAM_WEBHOOK_HOST")+"/"+os.Getenv("TELEGRAM_WEBHOOK_KEY"),
+			},
+			Listen: ":"+os.Getenv("PORT"),
+		}
 	}
 
 	b, err := telebot.NewBot(settings)
@@ -33,31 +37,29 @@ func main() {
 		log.Fatal("cannot authenticate into forlabs:", err)
 	}
 
-	if os.Getenv("USE_POLLING") != "yes" {
-		http.HandleFunc("/"+os.Getenv("TELEGRAM_WEBHOOK_KEY"), func(writer http.ResponseWriter, request *http.Request) {
-			upd := telebot.Update{}
-			data, err := io.ReadAll(request.Body)
-			if err != nil {
-				writer.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			if err := json.Unmarshal(data, &upd); err != nil {
-				writer.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			b.ProcessUpdate(upd)
-			writer.WriteHeader(http.StatusOK)
-		})
-		go http.ListenAndServe(":"+os.Getenv("PORT"), nil)
-		err = b.SetWebhook(&telebot.Webhook{
-			Endpoint: &telebot.WebhookEndpoint{
-				PublicURL: os.Getenv("TELEGRAM_WEBHOOK_HOST")+"/"+os.Getenv("TELEGRAM_WEBHOOK_KEY"),
-			},
-		})
-		if err != nil {
-			log.Fatalln("cannot set webhook:", err)
-		}
-	}
+	//if os.Getenv("USE_POLLING") != "yes" {
+	//	http.HandleFunc("/"+os.Getenv("TELEGRAM_WEBHOOK_KEY"), func(writer http.ResponseWriter, request *http.Request) {
+	//		upd := telebot.Update{}
+	//		data, err := io.ReadAll(request.Body)
+	//		if err != nil {
+	//			writer.WriteHeader(http.StatusInternalServerError)
+	//			return
+	//		}
+	//		if err := json.Unmarshal(data, &upd); err != nil {
+	//			writer.WriteHeader(http.StatusBadRequest)
+	//			return
+	//		}
+	//		b.ProcessUpdate(upd)
+	//		writer.WriteHeader(http.StatusOK)
+	//	})
+	//	go http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	//	err = b.SetWebhook(&telebot.Webhook{
+	//		Endpoint:
+	//	})
+	//	if err != nil {
+	//		log.Fatalln("cannot set webhook:", err)
+	//	}
+	//}
 
 	grid, err := f.GetGrid()
 	if err != nil {
